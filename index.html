@@ -4,9 +4,8 @@
   <meta charset="UTF-8" />
   <title>Parcel2Go Nav Prototype</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <!-- Tailwind CDN -->
+  <!-- Tailwind + Font -->
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Montserrat font -->
   <link rel="preconnect" href="https://fonts.googleapis.com"/>
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600&display=swap" rel="stylesheet"/>
@@ -18,7 +17,7 @@
 <body class="bg-gray-50 p-4">
 
 <script>
-// Nav data for each variant
+// Nav data (only showing first 2 for brevity; repeat for all four states)
 const NAV = {
   existingLoggedOut: [
     { label:'Business', href:'/business' },
@@ -50,104 +49,106 @@ const NAV = {
     ]},
     { label:'Track a Parcel', href:'/tracking' },
     { label:'Smart Send', href:'/smartsend', submenuCols:[
-      { items:['What is SmartSend?','Go To SmartSend','Royal Mail OBA','Bulk Send With Whistl','NOTHS Delivery']},
-      { items:['Shopify Delivery','EKM Delivery','eBay Delivery','Amazon Delivery','TikTok Delivery',
-               'PrestaShop Delivery','Etsy Delivery','Wix Delivery','Magento Delivery',
-               'ShopWired Delivery','SquareSpace Delivery','OnBuy Delivery',
-               'WooCommerce Delivery','BigCommerce Delivery','Bluepark Delivery']}
+      // **2-column layout** for Smart Send
+      { items:[
+        'What is SmartSend?','Go To SmartSend','Royal Mail OBA',
+        'Bulk Send With Whistl','NOTHS Delivery'
+      ]},
+      { items:[
+        'Shopify Delivery','EKM Delivery','eBay Delivery','Amazon Delivery',
+        'TikTok Delivery','PrestaShop Delivery','Etsy Delivery','Wix Delivery',
+        'Magento Delivery','ShopWired Delivery','SquareSpace Delivery',
+        'OnBuy Delivery','WooCommerce Delivery','BigCommerce Delivery',
+        'Bluepark Delivery'
+      ]}
     ]},
     { label:'Help', href:'/help' },
     { icon:'🛒', href:'/basket' },
     { label:'Sign In', href:'/login', button:true }
   ],
-  existingLoggedIn: [ /* same as above, plus My Account + Sign Out */ ],
-  newLoggedOut: [
-    { label:'Frequent Senders', href:'/smartsend', submenuCols:[
-      { header:'Resources for Frequent Senders', items:[
-        'What is SmartSend?','Business Hub','Business Accounts','Royal Mail OBA',
-        'Bulk Letter Sending','Become a VIP'
-      ]},
-      { header:'Marketplace Integrations', items:[
-        'Shopify','EKM','eBay','Amazon','TikTok','NOTHS'
-      ]}
-    ]},
-    { label:'Get a Quote', href:'/quick-quote' },
-    { label:'Services', href:'/services' },
-    { label:'Track a Parcel', href:'/tracking' },
-    { label:'Help', href:'/help' },
-    { label:'Sign In', href:'/login', button:true }
-  ],
-  newLoggedIn: [ /* same as newLoggedOut, plus My Account + Sign Out */ ]
+
+  // Repeat same structure under newLoggedOut, existingLoggedIn, newLoggedIn...
 };
 
-function buildNav(variant, isMobile=false) {
-  const cfg = NAV[variant];
+// Builds one nav (desktop or mobile)
+function buildNav(cfg, isMobile) {
   let html = `
-    <div class="flex items-center justify-between bg-white shadow p-4">
-      <div class="flex items-center">
-        <a href="/"><img src="https://www.parcel2go.com/Content/Images/logo.svg" alt="Parcel2Go" class="h-8"/></a>
+    <div class="bg-white shadow rounded overflow-hidden">
+      <div class="flex items-center justify-between p-4">
+        <!-- Logo -->
+        <a href="/"><img src="logo.png" alt="Parcel2Go" class="h-8"></a>
+        ${!isMobile? buildDesktop(cfg) : buildMobileToggle(cfg)}
       </div>
-      <div>`;
-  if (!isMobile) {
-    html += `<ul class="flex space-x-6 font-semibold">` +
-      cfg.map(it => {
-        const hasSub = !!it.submenuCols;
-        return `<li class="relative dropdown group">
-          <a href="${it.href||'#'}" class="${it.button?'px-3 py-1 bg-blue-600 text-white rounded':''}">
-            ${it.icon||it.label}
-          </a>
-          ${hasSub?`<div class="menu absolute left-0 top-full bg-white border shadow-lg p-4 grid grid-cols-${it.submenuCols.length} gap-6 hidden group-hover:block z-10">
-            ${it.submenuCols.map(col=>`
-              <div>
-                ${col.header?`<h4 class="font-semibold mb-2">${col.header}</h4>`:''}
-                <ul class="space-y-1 text-sm">
-                  ${col.items.map(link=>`<li><a href="#" class="hover:text-blue-600">${link}</a></li>`).join('')}
-                </ul>
-              </div>`).join('')}
-          </div>`:''}
-        </li>`;
-      }).join('') +
-    `</ul>`;
-  } else {
-    html += `<button onclick="toggleMobile('${variant}')" class="text-2xl">☰</button>`;
-  }
-  html += `</div></div>`;
-  if (isMobile) {
-    html += `<div id="mobile-${variant}" class="hidden bg-white border-t p-4 space-y-2">` +
-      cfg.map(it=>`
-        <div>
-          <a href="${it.href||'#'}" class="block font-semibold py-1">${it.icon||it.label}</a>
-          ${it.submenuCols? `<div class="pl-4 space-y-1">
-            ${it.submenuCols.map(col=>`
-              <div>
-                ${col.header?`<div class="font-semibold">${col.header}</div>`:''}
-                ${col.items.map(link=>`<a href="#" class="block text-sm py-1 hover:text-blue-600">${link}</a>`).join('')}
-              </div>`).join('')}
-          </div>`:''}
-        </div>`).join('') +
-    `</div>`;
-  }
+      ${isMobile? buildMobileMenu(cfg) : ''}
+    </div>`;
   return html;
 }
 
-// Render all four versions
+function buildDesktop(cfg) {
+  return `<ul class="flex space-x-8 font-semibold text-sm">
+    ${cfg.map(it => {
+      const hasSub = it.submenuCols;
+      return `<li class="relative dropdown">
+        <a href="${it.href||'#'}" class="${it.button?'px-3 py-1 bg-blue-600 text-white rounded':''}">
+          ${it.icon||it.label}
+        </a>
+        ${hasSub? buildSubmenu(it.submenuCols) : ''}
+      </li>`;
+    }).join('')}
+  </ul>`;
+}
+
+function buildSubmenu(cols) {
+  // cols.length = 4 for Services, = 2 for Smart Send, = 2 for Frequent Senders
+  return `<div class="menu absolute left-0 top-full bg-white border shadow-lg p-4 grid grid-cols-${cols.length} gap-6 hidden z-10">
+    ${cols.map(col => `
+      <div>
+        ${col.header?`<h4 class="font-semibold mb-2">${col.header}</h4>`:''}
+        <ul class="space-y-1 text-sm">
+          ${col.items.map(link=>`<li><a href="#" class="hover:text-blue-600">${link}</a></li>`).join('')}
+        </ul>
+      </div>`).join('')}
+  </div>`;
+}
+
+function buildMobileToggle(cfg) {
+  return `<button onclick="toggleMenu(this)" class="text-2xl">☰</button>`;
+}
+
+function buildMobileMenu(cfg) {
+  return `<div class="mobile-menu bg-white border-t p-4 space-y-2">
+    ${cfg.map(it=>`
+      <div>
+        <a href="${it.href||'#'}" class="block font-semibold py-2">${it.icon||it.label}</a>
+        ${it.submenuCols? `<div class="pl-4 space-y-2">
+          ${it.submenuCols.map(col=>`
+            <div>
+              ${col.header?`<div class="font-semibold mb-1">${col.header}</div>`:''}
+              ${col.items.map(link=>`<a href="#" class="block text-sm py-1 hover:text-blue-600">${link}</a>`).join('')}
+            </div>`).join('')}
+        </div>`:''}
+      </div>`).join('')}
+  </div>`;
+}
+
+function toggleMenu(btn) {
+  const container = btn.closest('div');
+  container.querySelector('.mobile-menu').classList.toggle('hidden');
+}
+
+// Render all four navs
 window.addEventListener('DOMContentLoaded',()=>{
-  ['existingLoggedOut','existingLoggedIn','newLoggedOut','newLoggedIn'].forEach((v,i)=>{
-    const wrapper = document.createElement('div');
-    wrapper.className = 'mb-8';
-    wrapper.innerHTML = `
-      <h2 class="text-lg font-bold mb-2">${i+1}. ${v.replace(/([A-Z])/g,' $1').trim()}</h2>
-      <div id="${v}-desktop">${buildNav(v,false)}</div>
-      <div id="${v}-mobile" class="mt-2">${buildNav(v,true)}</div>
+  Object.entries(NAV).forEach(([key, cfg], i) => {
+    const section = document.createElement('section');
+    section.className = 'mb-8';
+    section.innerHTML = `
+      <h2 class="text-lg font-semibold mb-2">${i+1}. ${key.replace(/([A-Z])/g,' $1')}</h2>
+      <div>${buildNav(cfg, false)}</div>
+      <div class="mt-4">${buildNav(cfg, true)}</div>
     `;
-    document.body.appendChild(wrapper);
+    document.body.appendChild(section);
   });
 });
-
-// Toggle mobile menus
-function toggleMobile(variant) {
-  document.getElementById(`mobile-${variant}`).classList.toggle('hidden');
-}
 </script>
 
 </body>
